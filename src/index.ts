@@ -1,21 +1,21 @@
-import data from './data';
+import data from './data'
 
 const checkDeviceUniqueness = devices => {
-    let ids = [];
+    let ids = []
     devices.map(device => {
         if (ids.includes(device.id)) {
-            throw new Error('ID приборов должны быть уникальны');
+            throw new Error('ID приборов должны быть уникальны')
         }
-        ids.push(device.id);
-    });
+        ids.push(device.id)
+    })
 }
 
 export default function createSchedule(data) {
     if (!data.devices || !data.rates || !data.maxPower) {
-        throw new Error('Входные данные не соответствуют необходимой структуре');
+        throw new Error('Входные данные не соответствуют необходимой структуре')
     }
 
-    checkDeviceUniqueness(data.devices);
+    checkDeviceUniqueness(data.devices)
 
     const schedule = {
         "0": [],
@@ -42,177 +42,177 @@ export default function createSchedule(data) {
         "21": [],
         "22": [],
         "23": []
-    };
-    const scheduleInPower = new Array(24).fill(0);
+    }
+    const scheduleInPower = new Array(24).fill(0)
 
     const consumedEnergy = {
         "value": 0,
         "devices": {},
-    };
+    }
 
     const sortField = (array: any[], key) => array.sort((a, b) => {
         if (a[key] > b[key]) {
-            return -1;
+            return -1
         } else if (a[key] === b[key]) {
-            return 0;
+            return 0
         } else {
-            return 1;
+            return 1
         }
-    });
+    })
 
     const fixFloat = (number: number, n = 4) => {
-        const string = number.toFixed(n).toString();
+        const string = number.toFixed(n).toString()
         if (string[string.length - 1] === '0') {
-            return fixFloat(number, n - 1);
+            return fixFloat(number, n - 1)
         } else {
-            return parseFloat(string);
+            return parseFloat(string)
         }
-    };
+    }
         
 
-    let sortedDevices = sortField(data.devices, 'duration');
+    let sortedDevices = sortField(data.devices, 'duration')
 
     const rates = {
         night: [],
         day: []
-    };
+    }
 
     data.rates.map(rate => {
         if ((rate.from >= 21 || rate.from <= 7) && (rate.to >= 21 || rate.to <= 7)) {
-            rates.night.push(rate);
+            rates.night.push(rate)
         } else {
-            rates.day.push(rate);
+            rates.day.push(rate)
         }
-    });
+    })
 
-    rates.night = sortField(rates.night, 'value').reverse();
-    rates.day = sortField(rates.day, 'value').reverse();
+    rates.night = sortField(rates.night, 'value').reverse()
+    rates.day = sortField(rates.day, 'value').reverse()
 
     sortedDevices.map(device => {
-        let hoursScheduled = 0;
-        consumedEnergy.devices[device.id] = 0;
+        let hoursScheduled = 0
+        consumedEnergy.devices[device.id] = 0
         if (device.mode === 'night') {
             rates.night.map(rate => {
-                let hour = rate.from;
+                let hour = rate.from
                 if (rate.to < rate.from && hoursScheduled < device.duration) {
                     while (hoursScheduled < device.duration) {
                         if (hoursScheduled >= device.duration) {
-                            break;
+                            break
                         }
                         if (hour === 24) {
-                            hour = 0;
+                            hour = 0
                         }
                         
-                        const hasEnoughPower = scheduleInPower[hour] + device.power <= data.maxPower;
+                        const hasEnoughPower = scheduleInPower[hour] + device.power <= data.maxPower
 
                         if (hasEnoughPower && (hour >= rate.to || hour < rate.to) && !schedule[hour].includes(device.id)) {
-                            hoursScheduled++;
-                            scheduleInPower[hour] += device.power;
-                            schedule[hour].push(device.id);
-                            consumedEnergy.value += rate.value * (device.power / 1000);
-                            consumedEnergy.devices[device.id] += rate.value * (device.power / 1000);
+                            hoursScheduled++
+                            scheduleInPower[hour] += device.power
+                            schedule[hour].push(device.id)
+                            consumedEnergy.value += rate.value * (device.power / 1000)
+                            consumedEnergy.devices[device.id] += rate.value * (device.power / 1000)
                         }
-                        hour++;
+                        hour++
                     }
                 } else if (rate.to > rate.from && hoursScheduled < device.duration) {
                     
                     while (hoursScheduled < device.duration) {
                         if (hoursScheduled >= device.duration) {
-                            break;
+                            break
                         }
                         
-                        const hasEnoughPower = scheduleInPower[hour] + device.power <= data.maxPower;
+                        const hasEnoughPower = scheduleInPower[hour] + device.power <= data.maxPower
 
                         if (hasEnoughPower && (hour >= rate.from && hour < rate.to) && !schedule[hour].includes(device.id)) {
-                            hoursScheduled++;
-                            scheduleInPower[hour] += device.power;
-                            schedule[hour].push(device.id);
-                            consumedEnergy.value += rate.value * (device.power / 1000);
-                            consumedEnergy.devices[device.id] += rate.value * (device.power / 1000);
+                            hoursScheduled++
+                            scheduleInPower[hour] += device.power
+                            schedule[hour].push(device.id)
+                            consumedEnergy.value += rate.value * (device.power / 1000)
+                            consumedEnergy.devices[device.id] += rate.value * (device.power / 1000)
                         }
-                        hour++;
+                        hour++
                     }
                 }
                 
-            });
+            })
         } else if (device.mode === 'day') {
             rates.day.map(rate => {
-                for (let hour = rate.from; hour < rate.to; hour++) {
+                for (let hour = rate.from hour < rate.to hour++) {
                     if (hoursScheduled >= device.duration) {
-                        break;
+                        break
                     }
 
-                    const hasEnoughPower = scheduleInPower[hour] + device.power <= data.maxPower;
+                    const hasEnoughPower = scheduleInPower[hour] + device.power <= data.maxPower
 
                     if (hasEnoughPower && hour >= rate.from && hour < rate.to && !schedule[hour].includes(device.id)) {
-                        hoursScheduled++;
-                        scheduleInPower[hour] += device.power;
-                        schedule[hour].push(device.id);
-                        consumedEnergy.value += rate.value * (device.power / 1000);
-                        consumedEnergy.devices[device.id] += rate.value * (device.power / 1000);
+                        hoursScheduled++
+                        scheduleInPower[hour] += device.power
+                        schedule[hour].push(device.id)
+                        consumedEnergy.value += rate.value * (device.power / 1000)
+                        consumedEnergy.devices[device.id] += rate.value * (device.power / 1000)
                     }
                 }
             })
         } else if (!device.mode) {
             sortField(data.rates, 'value').reverse().map(rate => {
-                let hour = rate.from;
+                let hour = rate.from
                 if (rate.to < rate.from && hoursScheduled < device.duration) {
                     while (hoursScheduled < device.duration) {
                         if (hoursScheduled >= device.duration) {
-                            break;
+                            break
                         }
                         if (hour === 24) {
-                            hour = 0;
+                            hour = 0
                         }
                         
-                        const hasEnoughPower = scheduleInPower[hour] + device.power <= data.maxPower;
+                        const hasEnoughPower = scheduleInPower[hour] + device.power <= data.maxPower
 
                         if (hasEnoughPower && (hour >= rate.from || hour < rate.to) && !schedule[hour].includes(device.id)) {
-                            hoursScheduled++;
-                            scheduleInPower[hour] += device.power;
-                            schedule[hour].push(device.id);
-                            consumedEnergy.value += rate.value * (device.power / 1000);
-                            consumedEnergy.devices[device.id] += rate.value * (device.power / 1000);
+                            hoursScheduled++
+                            scheduleInPower[hour] += device.power
+                            schedule[hour].push(device.id)
+                            consumedEnergy.value += rate.value * (device.power / 1000)
+                            consumedEnergy.devices[device.id] += rate.value * (device.power / 1000)
                         } else {
-                            break;
+                            break
                         }
-                        hour++;
+                        hour++
                     }
                 } else if (rate.to > rate.from && hoursScheduled < device.duration) {
                     while (hoursScheduled < device.duration) {
                         if (hoursScheduled >= device.duration) {
-                            break;
+                            break
                         }
                         
-                        const hasEnoughPower = scheduleInPower[hour] + device.power <= data.maxPower;
+                        const hasEnoughPower = scheduleInPower[hour] + device.power <= data.maxPower
 
                         if (hasEnoughPower && (hour >= rate.from && hour < rate.to) && !schedule[hour].includes(device.id)) {
-                            hoursScheduled++;
-                            scheduleInPower[hour] += device.power;
-                            schedule[hour].push(device.id);
-                            consumedEnergy.value += rate.value * (device.power / 1000);
-                            consumedEnergy.devices[device.id] += rate.value * (device.power / 1000);
+                            hoursScheduled++
+                            scheduleInPower[hour] += device.power
+                            schedule[hour].push(device.id)
+                            consumedEnergy.value += rate.value * (device.power / 1000)
+                            consumedEnergy.devices[device.id] += rate.value * (device.power / 1000)
                         } else {
-                            break;
+                            break
                         }
 
-                        hour++;
+                        hour++
                     }
                 }
             })
         }
 
-        consumedEnergy.devices[device.id] = fixFloat(consumedEnergy.devices[device.id]);
+        consumedEnergy.devices[device.id] = fixFloat(consumedEnergy.devices[device.id])
 // 
         return device
     })
 
-    consumedEnergy.value = fixFloat(consumedEnergy.value);
+    consumedEnergy.value = fixFloat(consumedEnergy.value)
     
     return {
         schedule,
         consumedEnergy
-    };
+    }
 }
 
-const result = createSchedule(data);
+const result = createSchedule(data)

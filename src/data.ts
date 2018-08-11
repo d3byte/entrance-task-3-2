@@ -61,4 +61,4 @@ export default {
         },
     ],
     "maxPower": 2100
-};
+}
