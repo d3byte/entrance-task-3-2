@@ -9,6 +9,7 @@
     "dev": "run-p build:watch run:watch",
     "build:watch": "webpack --watch",
     "run:watch": "nodemon dist/bundle",
+    "start": "node dist/bundle",
     "test": "mocha -r ts-node/register test/*.spec.ts"
   },
   "dependencies": {
